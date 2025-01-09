@@ -12,6 +12,9 @@ public class SentimentModel {
     @Id
     private String id;
 
+    @Field(type = FieldType.Text,name="reply")
+    private String reply;
+
     @Field(type = FieldType.Keyword, name = "sentiment")
     private String sentiment;
 

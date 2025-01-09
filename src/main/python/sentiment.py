@@ -72,6 +72,9 @@ def consume_and_process_kafka_data(input_topic, output_topic, bootstrap_servers,
                 )
 
                 result = {
+                    "original_message": {
+                        "id": data["id"]
+                    },
                     "sentiment_analysis": {
                         "Sentiment": sentiment_result["Sentiment"],  # Sentiment 값 추가
                         "SentimentScore": sentiment_result["SentimentScore"]

@@ -50,10 +50,14 @@ public class KafkaConsumerService {
             // JSON 메시지를 Tree 형태로 읽기
             JsonNode rootNode = objectMapper.readTree(message);
             JsonNode sentimentAnalysis = rootNode.get("sentiment_analysis");
+            JsonNode original = rootNode.get("original_message");
 
-            if (sentimentAnalysis != null) {
-                // SentimentModel 객체 생성 및 데이터 매핑 중첩 구조이기 때문에 직접 매핑을 해준다.
+            if (sentimentAnalysis != null && original != null) {
+                // SentimentModel 객체 생성 및 데이터 매핑
                 SentimentModel sentiment = new SentimentModel();
+
+                // original_message에서 id 값 추출
+                sentiment.setReply(original.get("id").asText());
                 sentiment.setSentiment(sentimentAnalysis.get("Sentiment").asText());
                 sentiment.setPositive(sentimentAnalysis.get("SentimentScore").get("Positive").asDouble());
                 sentiment.setNegative(sentimentAnalysis.get("SentimentScore").get("Negative").asDouble());
@@ -71,11 +75,12 @@ public class KafkaConsumerService {
 
                 System.out.println("Consumed sentiment: " + sentiment);
             } else {
-                System.err.println("Message does not contain sentiment_analysis: " + message);
+                System.err.println("Message does not contain required fields: " + message);
             }
         } catch (Exception e) {
             System.err.println("Failed to consume message: " + e.getMessage());
         }
     }
+
 
 }
