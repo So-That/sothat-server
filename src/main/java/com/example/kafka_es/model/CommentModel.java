@@ -10,8 +10,6 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @Data
 public class CommentModel {
 
-    @Id
-    private String id;
 
     @Field(type = FieldType.Keyword,name="video_id")
     private String video_id;

@@ -9,8 +9,6 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @Document(indexName = "sentiment")
 @Data
 public class SentimentModel {
-    @Id
-    private String id;
 
     @Field(type = FieldType.Text,name="reply")
     private String reply;
