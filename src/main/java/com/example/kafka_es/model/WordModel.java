@@ -14,6 +14,9 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @Data
 public class WordModel {
 
+    @Id
+    private String id;
+
     @Field(type = FieldType.Keyword,name="word")
     private String word;
 

@@ -23,7 +23,7 @@ public class KafkaConsumerService {
 
     private final List<WordModel> wordBuffer = new ArrayList<>();
 
-    private static final int BULK_SIZE = 30; // Bulk 저장 크기
+    private static final int BULK_SIZE = 15; // Bulk 저장 크기
     public KafkaConsumerService(CommentService commentService, SentimentService sentimentService, WordService wordService,ObjectMapper objectMapper) {
         this.commentService = commentService;
         this.sentimentService=sentimentService;
@@ -89,7 +89,7 @@ public class KafkaConsumerService {
         }
     }
 
-    @KafkaListener(topics = "words", groupId = "word-consumer-group")
+    @KafkaListener(topics = "word", groupId = "word-consumer-group")
     public void consumeWord(String message) {
         try {
             // JSON 메시지에서 WordModel 객체로 변환
