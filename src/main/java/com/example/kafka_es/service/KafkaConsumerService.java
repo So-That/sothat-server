@@ -1,6 +1,8 @@
 package com.example.kafka_es.service;
 
 import com.example.kafka_es.model.SentimentModel;
+import com.example.kafka_es.model.WordModel;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.kafka_es.model.CommentModel;
@@ -14,13 +16,18 @@ import java.util.List;
 public class KafkaConsumerService {
     private final CommentService commentService;
     private final SentimentService sentimentService;
+    private final WordService wordService;
     private final ObjectMapper objectMapper;
     private final List<CommentModel> commentBuffer = new ArrayList<>();
     private final List<SentimentModel> sentimentBuffer = new ArrayList<>();
-    private static final int BULK_SIZE = 10; // Bulk 저장 크기
-    public KafkaConsumerService(CommentService commentService, SentimentService sentimentService, ObjectMapper objectMapper) {
+
+    private final List<WordModel> wordBuffer = new ArrayList<>();
+
+    private static final int BULK_SIZE = 15; // Bulk 저장 크기
+    public KafkaConsumerService(CommentService commentService, SentimentService sentimentService, WordService wordService,ObjectMapper objectMapper) {
         this.commentService = commentService;
         this.sentimentService=sentimentService;
+        this.wordService=wordService;
         this.objectMapper = objectMapper;
     }
 
@@ -79,6 +86,28 @@ public class KafkaConsumerService {
             }
         } catch (Exception e) {
             System.err.println("Failed to consume message: " + e.getMessage());
+        }
+    }
+
+    @KafkaListener(topics = "word", groupId = "word-consumer-group")
+    public void consumeWord(String message) {
+        try {
+            // JSON 메시지에서 WordModel 객체로 변환
+            WordModel word = objectMapper.readValue(message, WordModel.class);
+
+            // 버퍼에 단어 추가
+            wordBuffer.add(word);
+
+            // 버퍼가 BULK_SIZE에 도달하면 Elasticsearch에 저장
+            if (wordBuffer.size() >= BULK_SIZE) {
+                wordService.updateToES(wordBuffer);
+                wordBuffer.clear(); // 버퍼 초기화
+            }
+            System.out.println("Consumed word: " + word);
+        } catch (JsonProcessingException e) {
+            System.err.println("Failed to parse message: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("Unexpected error: " + e.getMessage());
         }
     }
 
