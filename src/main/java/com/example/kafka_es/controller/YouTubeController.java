@@ -6,7 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/youtubeSearch")
@@ -18,14 +19,32 @@ public class YouTubeController {
         this.youTubeProducer = youTubeProducer;
     }
 
-    @GetMapping
+    @GetMapping("/comments")
     public String searchAndSendToKafka() {
 
-        System.out.println("짜잔");
-        Scanner sc=new Scanner(System.in);
-        String query=sc.nextLine();
-        youTubeProducer.process(query);
+        List<String>videoIds=new ArrayList<>();
+        videoIds.add("tYmNlVdwVIw");
+        youTubeProducer.process(videoIds);
+        return "Processing videoComment : " + videoIds;
+    }
+
+    @GetMapping("/words")
+    public String searchVideoByWords(){
+
+        String query="애플";
+        System.out.println(youTubeProducer.searchMainVideos(query));
+
         return "Processing query: " + query;
+
+    }
+
+    @GetMapping("/urls")
+    public String searchVideoByUrls(){
+        List<String> urls = new ArrayList<>();
+        urls.add("https://www.youtube.com/watch?v=tYmNlVdwVIw");
+        System.out.println(youTubeProducer.searchMainVideosByUrl(urls));
+
+        return "Processing urls: " + urls;
     }
 
 }

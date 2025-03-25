@@ -31,7 +31,7 @@ public class KafkaConsumerService {
         this.objectMapper = objectMapper;
     }
 
-    @KafkaListener(topics = "youtube_comment", groupId = "ES-group")
+    @KafkaListener(topics = "CleanedComments", groupId = "ES-group")
     public void consumeYoutube(String message) {
         try {
 

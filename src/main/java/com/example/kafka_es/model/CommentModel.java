@@ -14,11 +14,15 @@ public class CommentModel {
     @Field(type = FieldType.Keyword,name="video_id")
     private String video_id;
 
+    /*
+    @Field(type = FieldType.Keyword,name="query")
+    private String query;
+*/
     @Field(type = FieldType.Text,name="reply")
     private String reply;
 
     @Field(type = FieldType.Integer,name="like_count")
-    private String like_count;
+    private int like_count;
 
     @Field(type = FieldType.Date,name="published_at")
     private String published_at;
