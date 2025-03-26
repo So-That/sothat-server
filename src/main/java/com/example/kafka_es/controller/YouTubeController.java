@@ -1,50 +1,33 @@
 package com.example.kafka_es.controller;
 
 import com.example.kafka_es.service.YouTubeProducerService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/youtubeSearch")
+@RequestMapping("/youtube")
+@Tag(name = "YouTube API", description = "YouTube 데이터를 가져오는 API")
 public class YouTubeController {
 
-    private final YouTubeProducerService youTubeProducer;
+    private final YouTubeProducerService youTubeProducerService;
 
-    public YouTubeController(YouTubeProducerService youTubeProducer) {
-        this.youTubeProducer = youTubeProducer;
+    public YouTubeController(YouTubeProducerService youTubeProducerService) {
+        this.youTubeProducerService = youTubeProducerService;
     }
 
-    @GetMapping("/comments")
-    public String searchAndSendToKafka() {
-
-        List<String>videoIds=new ArrayList<>();
-        videoIds.add("tYmNlVdwVIw");
-        youTubeProducer.process(videoIds);
-        return "Processing videoComment : " + videoIds;
+    @Operation(summary = "검색어로 동영상 정보 조회", description = "검색어를 이용하여 유튜브 동영상 정보를 가져옵니다.")
+    @GetMapping("/search")
+    public List<Map<String, Object>> searchVideos(@RequestParam String query) {
+        return youTubeProducerService.searchMainVideos(query);
     }
 
-    @GetMapping("/words")
-    public String searchVideoByWords(){
-
-        String query="애플";
-        System.out.println(youTubeProducer.searchMainVideos(query));
-
-        return "Processing query: " + query;
-
+    @Operation(summary = "URL을 통해 동영상 정보 조회", description = "유튜브 URL 리스트를 이용하여 동영상 정보를 가져옵니다.")
+    @GetMapping("/searchByUrl")
+    public List<Map<String, Object>> searchVideosByUrl(@RequestParam List<String> urls) {
+        return youTubeProducerService.searchMainVideosByUrl(urls);
     }
-
-    @GetMapping("/urls")
-    public String searchVideoByUrls(){
-        List<String> urls = new ArrayList<>();
-        urls.add("https://www.youtube.com/watch?v=tYmNlVdwVIw");
-        System.out.println(youTubeProducer.searchMainVideosByUrl(urls));
-
-        return "Processing urls: " + urls;
-    }
-
 }

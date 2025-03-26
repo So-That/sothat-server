@@ -30,6 +30,7 @@ dependencies {
     implementation 'org.springframework.kafka:spring-kafka'
     implementation 'co.elastic.clients:elasticsearch-java:8.15.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.0.2'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
