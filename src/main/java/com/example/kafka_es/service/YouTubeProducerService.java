@@ -129,13 +129,16 @@ public class YouTubeProducerService {
      * 채널 ID로 구독자 수 가져오기
      */
     private Map<String, Object> getChannelDetails(String channelId) {
-        String channelDetailsUrl = "https://www.googleapis.com/youtube/v3/channels?part=statistics&id=" + channelId + "&key=" + apiKey;
+        String channelDetailsUrl = "https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=" + channelId + "&key=" + apiKey;
         JsonNode channelDetailsResponse = restTemplate.getForObject(channelDetailsUrl, JsonNode.class);
 
         Map<String, Object> channelStats = new HashMap<>();
         if (channelDetailsResponse != null && channelDetailsResponse.has("items")) {
-            JsonNode channelData = channelDetailsResponse.get("items").get(0).get("statistics");
-            channelStats.put("subscriberCount", channelData.get("subscriberCount").asText());
+            JsonNode channelItem = channelDetailsResponse.get("items").get(0);
+            JsonNode statistics=channelItem.get("statistics");
+            JsonNode snippet=channelItem.get("snippet");
+            channelStats.put("subscriberCount", statistics.get("subscriberCount").asText());
+            channelStats.put("profileImageUrl",snippet.get("thumbnails").get("high").get("url").asText());
         }
         return channelStats;
     }
