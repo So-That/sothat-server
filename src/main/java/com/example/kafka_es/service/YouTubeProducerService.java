@@ -25,19 +25,6 @@ public class YouTubeProducerService {
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
     }
-
-    // 검색어를 이용해 동영상을 검색하고, 댓글을 가져와 Kafka로 전송
-    public void process(List<String> videoIds) {
-        try {
-
-            List<JsonNode> comments = fetchComments(videoIds);
-            for (JsonNode comment : comments) {
-                sendToKafka(objectMapper.writeValueAsString(comment));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
     //검색어로 동영상 ID 조회
     private List<String> searchVideos(String query) {
         String url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + query + "&maxResults=3&type=video&key=" + apiKey;
@@ -76,21 +63,6 @@ public class YouTubeProducerService {
             return url.split("youtu.be/")[1].split("\\?")[0];
         }
         return null;
-    }
-
-    /**
-     * URL 리스트를 통해 동영상 정보 조회
-     */
-    public List<Map<String, Object>> searchMainVideosByUrl(List<String> urls) {
-        List<Map<String, Object>> videoDetailsList = new ArrayList<>();
-
-        for (String url : urls) {
-            String videoId = extractVideoId(url);
-            if (videoId != null) {
-                videoDetailsList.add(getVideoDetails(videoId));
-            }
-        }
-        return videoDetailsList;
     }
 
     /**
@@ -147,23 +119,49 @@ public class YouTubeProducerService {
      * 비디오 ID 리스트로 댓글 가져오기
      */
     private List<JsonNode> fetchComments(List<String> videoIds) {
+        Set<String> seenCommentIds = new HashSet<>(); // 중복 방지
         List<JsonNode> comments = new ArrayList<>();
 
         for (String videoId : videoIds) {
-            String url = "https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=" + videoId + "&maxResults=5&key=" + apiKey;
-            JsonNode response = restTemplate.getForObject(url, JsonNode.class);
+            String nextPageToken = "";
+            int count = 0;
 
-            if (response != null && response.has("items")) {
-                for (JsonNode item : response.get("items")) {
-                    if (item.has("snippet") && item.get("snippet").has("topLevelComment")) {
-                        JsonNode commentSnippet = item.get("snippet").get("topLevelComment").get("snippet");
-                        comments.add(createCommentModel(item.get("id").asText(), videoId,commentSnippet));
+            while (nextPageToken != null && count < 600) {
+                String url = String.format(
+                        "https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=%s&maxResults=100&order=relevance&pageToken=%s&key=%s",
+                        videoId, nextPageToken, apiKey
+                );
+
+                JsonNode response = restTemplate.getForObject(url, JsonNode.class);
+
+                if (response != null && response.has("items")) {
+                    for (JsonNode item : response.get("items")) {
+                        if (item.has("snippet") && item.get("snippet").has("topLevelComment")) {
+                            JsonNode commentSnippet = item.get("snippet").get("topLevelComment").get("snippet");
+                            String commentId = item.get("id").asText();
+
+                            if (seenCommentIds.add(commentId)) { // 중복 제거
+                                comments.add(createCommentModel(commentId, videoId, commentSnippet));
+                                count++;
+
+                                if (count >= 600) break; // 600개 넘으면 멈춤
+                            }
+                        }
                     }
                 }
+
+                // 다음 페이지로 이동 (없으면 종료)
+                nextPageToken = (response != null && response.has("nextPageToken"))
+                        ? response.get("nextPageToken").asText()
+                        : null;
             }
+
+            if (comments.size() >= 600) break; // 전체 600개 넘으면 종료
         }
+
         return comments;
     }
+
 
     /**
      *  댓글 JSON 데이터 생성
@@ -185,4 +183,43 @@ public class YouTubeProducerService {
     private void sendToKafka(String message) {
         kafkaTemplate.send(kafkaTopic, message);
     }
+
+
+    /**
+     * URL 리스트를 통해 동영상 댓글을 가져와 Kafka에 전송하고 JSON 반환
+     */
+    public List<JsonNode> fetchCommentByUrl(List<String> urls) {
+        List<String> videoIds = new ArrayList<>();
+
+        for (String url : urls) {
+            String videoId = extractVideoId(url);
+            if (videoId != null) {
+                videoIds.add(videoId);
+            }
+        }
+        return fetchAndSendComments(videoIds);
+    }
+
+    /**
+     * 비디오 ID 리스트를 통해 동영상 댓글을 가져와 Kafka에 전송하고 JSON 반환
+     */
+    public List<JsonNode> fetchCommentByWord(List<String> videoIds) {
+        return fetchAndSendComments(videoIds);
+    }
+
+    /**
+     * 댓글을 가져와 Kafka에 전송하고 JSON 반환
+     */
+    private List<JsonNode> fetchAndSendComments(List<String> videoIds) {
+        if (videoIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<JsonNode> comments = fetchComments(videoIds);
+        for (JsonNode comment : comments) {
+            sendToKafka(comment.toString());
+        }
+        return comments;
+    }
+
 }
