@@ -1,6 +1,7 @@
 package com.example.kafka_es.controller;
 
 import com.example.kafka_es.service.YouTubeProducerService;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
@@ -19,17 +20,22 @@ public class YouTubeController {
         this.youTubeProducerService = youTubeProducerService;
     }
 
-    @Operation(summary = "동영상 기본 정보 목록 조회", description = "검색어를 이용하여 유튜브 동영상의 기본 정보 목록을 가져옵니다.")
+    @Operation(summary = "검색어로 동영상 정보 조회", description = "검색어를 이용하여 유튜브 동영상 정보를 가져옵니다.")
     @GetMapping("/search")
     public List<Map<String, Object>> searchVideos(@RequestParam String query) {
         return youTubeProducerService.searchMainVideos(query);
     }
 
-//    @Operation(summary = "URL을 통해 동영상 정보 조회", description = "유튜브 URL 리스트를 이용하여 동영상 정보를 가져옵니다.")
-//    @GetMapping("/search/url")
-//    public List<Map<String, Object>> searchVideosByUrl(@RequestParam List<String> urls) {
-//        return youTubeProducerService.searchMainVideosByUrl(urls);
-//    }
+    @Operation(summary = "검색어를 통해 댓글 분석", description = " 검색어를 이용하여 동영상 댓글 정보를 가져옵니다.")
+    @GetMapping("/word")
+    public List<JsonNode>searchVideosByWord(@RequestParam List<String> videoIds) {
+        return youTubeProducerService.fetchCommentByWord(videoIds);
+    }
+    @Operation(summary = "URL을 통해 댓글 분석", description = "유튜브 URL 리스트를 이용하여 동영상 댓글 정보를 가져옵니다.")
+    @GetMapping("/url")
+    public List<JsonNode>searchVideosByUrl(@RequestParam List<String> urls) {
+        return youTubeProducerService.fetchCommentByUrl(urls);
+    }
 
-    
+
 }
