@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.kafka_es.config.KafkaProducerConfig;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -17,7 +18,8 @@ public class YouTubeProducerService {
     private final String kafkaTopic;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
-    private final String apiKey = System.getenv("API_KEY");
+    @Value("${youtube.api.key}")
+    private String apiKey;
 
     public YouTubeProducerService(KafkaTemplate<String, String> kafkaTemplate, KafkaProducerConfig kafkaProducerConfig) {
         this.kafkaTemplate = kafkaTemplate;
@@ -122,13 +124,15 @@ public class YouTubeProducerService {
         Set<String> seenCommentIds = new HashSet<>(); // 중복 방지
         List<JsonNode> comments = new ArrayList<>();
 
+        int max_cnt=600;
+
         for (String videoId : videoIds) {
             String nextPageToken = "";
             int count = 0;
 
-            while (nextPageToken != null && count < 600) {
+            while (nextPageToken != null && count < max_cnt) {
                 String url = String.format(
-                        "https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&videoId=%s&maxResults=100&order=relevance&pageToken=%s&key=%s",
+                        "https://www.googleapis.com/youtube/v3/commentThreads?part=snippet,replies&videoId=%s&maxResults=100&order=relevance&pageToken=%s&key=%s",
                         videoId, nextPageToken, apiKey
                 );
 
@@ -137,26 +141,40 @@ public class YouTubeProducerService {
                 if (response != null && response.has("items")) {
                     for (JsonNode item : response.get("items")) {
                         if (item.has("snippet") && item.get("snippet").has("topLevelComment")) {
-                            JsonNode commentSnippet = item.get("snippet").get("topLevelComment").get("snippet");
-                            String commentId = item.get("id").asText();
+                            // 상위 댓글
+                            JsonNode topComment = item.get("snippet").get("topLevelComment");
+                            JsonNode commentSnippet = topComment.get("snippet");
+                            String commentId = topComment.get("id").asText();
 
-                            if (seenCommentIds.add(commentId)) { // 중복 제거
+                            if (seenCommentIds.add(commentId)) {
                                 comments.add(createCommentModel(commentId, videoId, commentSnippet));
                                 count++;
+                                if (count >= max_cnt) break;
+                            }
 
-                                if (count >= 600) break; // 600개 넘으면 멈춤
+                            // ✅ 답글이 있으면 추가 수집
+                            if (item.has("replies") && item.get("replies").has("comments")) {
+                                for (JsonNode reply : item.get("replies").get("comments")) {
+                                    String replyId = reply.get("id").asText();
+                                    JsonNode replySnippet = reply.get("snippet");
+
+                                    if (seenCommentIds.add(replyId)) {
+                                        comments.add(createCommentModel(replyId, videoId, replySnippet));
+                                        count++;
+                                        if (count >= max_cnt) break;
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
-                // 다음 페이지로 이동 (없으면 종료)
                 nextPageToken = (response != null && response.has("nextPageToken"))
                         ? response.get("nextPageToken").asText()
                         : null;
             }
 
-            if (comments.size() >= 600) break; // 전체 600개 넘으면 종료
+            if (comments.size() >= max_cnt) break;
         }
 
         return comments;

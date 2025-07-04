@@ -2,6 +2,7 @@ package com.example.kafka_es.config;
 
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
@@ -14,7 +15,8 @@ import java.util.Map;
 @Configuration
 public class KafkaProducerConfig {
 
-    private static final String BOOTSTRAP_SERVERS = "localhost:9092";
+    @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
+    private String BOOTSTRAP_SERVERS;
     private static final String TOPIC_NAME = "RawComments";
 
     @Bean

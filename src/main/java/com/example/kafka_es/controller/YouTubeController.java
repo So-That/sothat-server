@@ -26,16 +26,14 @@ public class YouTubeController {
         return youTubeProducerService.searchMainVideos(query);
     }
 
-    @Operation(summary = "검색어를 통해 댓글 분석", description = " 검색어를 이용하여 동영상 댓글 정보를 가져옵니다.")
+    @Operation(summary = "선택된 비디오 댓글 분석", description = " 선택된 영상의 동영상 댓글 정보를 가져옵니다.")
     @GetMapping("/word")
-    public List<JsonNode>searchVideosByWord(@RequestParam List<String> videoIds) {
+    public List<JsonNode>searchCommentsById(@RequestParam List<String> videoIds) {
         return youTubeProducerService.fetchCommentByWord(videoIds);
     }
     @Operation(summary = "URL을 통해 댓글 분석", description = "유튜브 URL 리스트를 이용하여 동영상 댓글 정보를 가져옵니다.")
     @GetMapping("/url")
-    public List<JsonNode>searchVideosByUrl(@RequestParam List<String> urls) {
+    public List<JsonNode>searchCommentsByUrl(@RequestParam List<String> urls) {
         return youTubeProducerService.fetchCommentByUrl(urls);
     }
-
-
 }

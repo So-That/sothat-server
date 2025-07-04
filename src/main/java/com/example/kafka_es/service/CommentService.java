@@ -25,7 +25,7 @@ public class CommentService {
             bulkOperations.add(
                     BulkOperation.of(b -> b
                             .index(idx -> idx
-                                    .index("youtube_comment")
+                                    .index("analyzed")
                                     .document(comment)
                             )
                     )
