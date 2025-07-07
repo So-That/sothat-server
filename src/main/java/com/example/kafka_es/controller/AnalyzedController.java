@@ -16,10 +16,21 @@ public class VisualizationController {
     public VisualizationController(KafkaConsumerService kafkaConsumerService) {
         this.kafkaConsumerService = kafkaConsumerService;
     }
+    @GetMapping("/summary")
+    public ResponseEntity<AnalyzedCommentResponse> getSummary() {
+        AnalyzedCommentResponse response = consumerService.createSummary();
+        return ResponseEntity.ok(response);
+    }
 
-    @GetMapping("/visualization")
-    public List<CommentModel> getCommentsForVisualization() {
-        return kafkaConsumerService.getVisualizationComments();
+    @GetMapping("/visualize")
+    public ResponseEntity<List<CommentModel>> getRawComments() {
+        return ResponseEntity.ok(consumerService.getVisualizationComments());
+    }
+
+    @PostMapping("/clear")
+    public ResponseEntity<String> clearComments() {
+        consumerService.clearVisualizationComments();
+        return ResponseEntity.ok("Cleared");
     }
 }
 
