@@ -15,8 +15,8 @@ public class SwaggerConfig {
     }
     private Info info() {
         return new Info()
-                .title("Mongo Basic API")
-                .description("Mongo API reference for developers")
+                .title("Sothat API")
+                .description("Sothat API reference for developers")
                 .version("1.0");
     }
 }

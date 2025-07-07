@@ -23,7 +23,7 @@ public class YouTubeProducerService {
 
     public YouTubeProducerService(KafkaTemplate<String, String> kafkaTemplate, KafkaProducerConfig kafkaProducerConfig) {
         this.kafkaTemplate = kafkaTemplate;
-        this.kafkaTopic = kafkaProducerConfig.getTopicName();
+        this.kafkaTopic = "RawComments";
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
     }

@@ -17,8 +17,6 @@ public class KafkaProducerConfig {
 
     @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
     private String BOOTSTRAP_SERVERS;
-    private static final String TOPIC_NAME = "RawComments";
-
     @Bean
     public ProducerFactory<String, String> producerFactory() {
         Map<String, Object> config = new HashMap<>();
@@ -31,9 +29,5 @@ public class KafkaProducerConfig {
     @Bean
     public KafkaTemplate<String, String> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
-    }
-
-    public String getTopicName() {
-        return TOPIC_NAME;
     }
 }
