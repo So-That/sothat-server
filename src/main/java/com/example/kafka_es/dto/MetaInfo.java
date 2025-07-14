@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -14,7 +15,7 @@ public class MetaInfo {
     private int totalReviewCount;
 
     @JsonProperty("video_id")
-    private String videoId;
+    private List<String> videoIds;
 
     @JsonProperty("category_review_count")
     private Map<String, Integer> categoryReviewCount;

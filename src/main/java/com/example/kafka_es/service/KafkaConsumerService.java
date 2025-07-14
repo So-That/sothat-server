@@ -41,7 +41,7 @@ public class KafkaConsumerService {
     }
 
     // 통계/요약 생성
-    public AnalyzedCommentResponse createSummary() {
+    public AnalyzedCommentResponse createSummary(List<String> videoIds,String targetProduct) {
         List<CommentModel> comments = new ArrayList<>(visualizationComments);
 
         MetaInfo meta = new MetaInfo();
@@ -88,12 +88,14 @@ public class KafkaConsumerService {
             categoryReviews.put(category, topTexts);
         }
 
+        meta.setVideoIds(videoIds);
         meta.setTotalReviewCount(comments.size());
         meta.setCategoryReviewCount(categoryCount);
         meta.setTotalSentimentCount(sentimentCount);
         meta.setCategorySentimentCount(categorySentiment);
 
         AnalyzedCommentResponse response = new AnalyzedCommentResponse();
+        response.setTargetProduct(targetProduct);
         response.setMetaInfo(meta);
         response.setCategoryReviews(categoryReviews);
         return response;
