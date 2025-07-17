@@ -17,8 +17,7 @@ public class KafkaConsumerService {
     private final ObjectMapper objectMapper;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    // 시각화용 원본 댓글 저장소
-    private final List<CommentModel> visualizationComments = new ArrayList<>();
+    private final Map<String, List<CommentModel>> videoCommentsMap = new HashMap<>();
 
     public KafkaConsumerService(ObjectMapper objectMapper,
                                 KafkaTemplate<String, String> kafkaTemplate) {
@@ -31,19 +30,27 @@ public class KafkaConsumerService {
     public void consume(String message) {
         try {
             CommentModel comment = objectMapper.readValue(message, CommentModel.class);
-            visualizationComments.add(comment);
 
-            System.out.println("Received comment: " + comment.getText());
+            String videoId = comment.getVideoId();
+            if (videoId == null) return;
+
+            videoCommentsMap.putIfAbsent(videoId, new ArrayList<>());
+            videoCommentsMap.get(videoId).add(comment);
+
+            System.out.println("Received comment for videoId=" + videoId + ": " + comment.getText());
 
         } catch (Exception e) {
             System.err.println("Failed to process message: " + e.getMessage());
         }
     }
 
-    // 통계/요약 생성
-    public AnalyzedCommentResponse createSummary(List<String> videoIds,String targetProduct) {
-        List<CommentModel> comments = new ArrayList<>(visualizationComments);
 
+    // 통계/요약 생성
+    public AnalyzedCommentResponse createSummary(List<String> videoIds, String targetProduct) {
+        List<CommentModel> comments = videoIds.stream()
+                .filter(videoCommentsMap::containsKey)
+                .flatMap(id -> videoCommentsMap.get(id).stream())
+                .collect(Collectors.toList());
         MetaInfo meta = new MetaInfo();
         Map<String, Integer> categoryCount = new HashMap<>();
         Map<String, Integer> sentimentCount = new HashMap<>();
@@ -114,11 +121,4 @@ public class KafkaConsumerService {
         return 0.5 * likeNorm + 0.25 * confNorm + 0.25 * sentNorm;
     }
 
-    public List<CommentModel> getVisualizationComments() {
-        return new ArrayList<>(visualizationComments);
-    }
-
-    public void clearVisualizationComments() {
-        visualizationComments.clear();
-    }
 }

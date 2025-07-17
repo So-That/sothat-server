@@ -17,7 +17,6 @@ public class VideoModel {
             @Field(type = FieldType.Keyword,name="video_title")
             private String video_title;
 
-
             @Field(type = FieldType.Keyword,name="channelTitle")
             private String channelTitle;
 

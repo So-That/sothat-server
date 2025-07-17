@@ -65,22 +65,4 @@ public class AnalyzedController {
         return ResponseEntity.ok(gptResponse.getBody());
     }
 
-
-    /**
-     * Kafka에서 수집된 원본 댓글 조회
-     */
-    @GetMapping("/visualize")
-    public ResponseEntity<List<CommentModel>> getRawComments() {
-        return ResponseEntity.ok(consumerService.getVisualizationComments());
-    }
-
-    /**
-     * KafkaConsumerService에 저장된 댓글 데이터 초기화
-     */
-    @PostMapping("/clear")
-    public ResponseEntity<String> clearComments() {
-        consumerService.clearVisualizationComments();
-        return ResponseEntity.ok("Cleared");
-    }
-
 }
