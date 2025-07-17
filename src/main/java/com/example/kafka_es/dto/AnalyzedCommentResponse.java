@@ -11,7 +11,6 @@ import java.util.List;
 
 @Getter
 @Setter
-@Document(collection="analyzed_summaries")
 public class AnalyzedCommentResponse {
 
     @JsonProperty("target_product")
