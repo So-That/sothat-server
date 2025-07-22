@@ -3,7 +3,9 @@ package com.example.kafka_es.service;
 import com.example.kafka_es.model.CommentModel;
 import com.example.kafka_es.dto.AnalyzedCommentResponse;
 import com.example.kafka_es.dto.MetaInfo;
+import com.example.kafka_es.repository.AnalyzedCommentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -17,12 +19,15 @@ public class KafkaConsumerService {
     private final ObjectMapper objectMapper;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
+    private final AnalyzedCommentRepository analyzedCommentRepository;
     private final Map<String, List<CommentModel>> videoCommentsMap = new HashMap<>();
 
+    @Autowired
     public KafkaConsumerService(ObjectMapper objectMapper,
-                                KafkaTemplate<String, String> kafkaTemplate) {
+                                KafkaTemplate<String, String> kafkaTemplate, AnalyzedCommentRepository analyzedCommentRepository) {
         this.objectMapper = objectMapper;
         this.kafkaTemplate = kafkaTemplate;
+        this.analyzedCommentRepository = analyzedCommentRepository;
     }
 
     // Kafka에서 analyzed_comments 수신
@@ -105,6 +110,15 @@ public class KafkaConsumerService {
         response.setTargetProduct(targetProduct);
         response.setMetaInfo(meta);
         response.setCategoryReviews(categoryReviews);
+
+        System.out.println("===========MongoDB 저장 내용======="+response);
+        try {
+            analyzedCommentRepository.save(response);
+            System.out.println("저장 성공");
+        } catch (Exception e) {
+            System.out.println("저장 실패: " + e.getMessage());
+            e.printStackTrace();  // 콘솔에 전체 예외 로그 출력
+        }
         return response;
     }
 
