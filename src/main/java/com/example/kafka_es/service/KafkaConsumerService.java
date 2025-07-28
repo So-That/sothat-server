@@ -51,11 +51,30 @@ public class KafkaConsumerService {
 
 
     // 통계/요약 생성
-    public AnalyzedCommentResponse createSummary(List<String> videoIds, String targetProduct) {
-        List<CommentModel> comments = videoIds.stream()
+    public AnalyzedCommentResponse createSummary(List<String> inputVideoIds, String targetProduct) {
+        // 1. 이미 저장된 videoId 목록 조회
+        List<AnalyzedCommentResponse> existing = analyzedCommentRepository.findByMetaInfo_VideoIdsIn(inputVideoIds);
+        Set<String> existingVideoIds = existing.stream()
+                .flatMap(doc -> doc.getMetaInfo().getVideoIds().stream())
+                .collect(Collectors.toSet());
+
+        // 2. 새로 처리할 videoIds
+        List<String> newVideoIds = inputVideoIds.stream()
+                .filter(id -> !existingVideoIds.contains(id))
+                .collect(Collectors.toList());
+
+        // 3. 저장할 게 없다면 종료
+        if (newVideoIds.isEmpty()) {
+            System.out.println("저장할 새로운 videoId가 없습니다.");
+            return null;
+        }
+
+        // 4. 새로운 videoIds만으로 댓글 필터링 및 summary 생성
+        List<CommentModel> comments = newVideoIds.stream()
                 .filter(videoCommentsMap::containsKey)
                 .flatMap(id -> videoCommentsMap.get(id).stream())
                 .collect(Collectors.toList());
+
         MetaInfo meta = new MetaInfo();
         Map<String, Integer> categoryCount = new HashMap<>();
         Map<String, Integer> sentimentCount = new HashMap<>();
@@ -76,7 +95,6 @@ public class KafkaConsumerService {
             grouped.get(category).add(comment);
         }
 
-        // 카테고리별 상위 20개 댓글 추출
         Map<String, List<String>> categoryReviews = new HashMap<>();
         for (String category : grouped.keySet()) {
             List<CommentModel> commentsInCategory = grouped.get(category);
@@ -100,7 +118,7 @@ public class KafkaConsumerService {
             categoryReviews.put(category, topTexts);
         }
 
-        meta.setVideoIds(videoIds);
+        meta.setVideoIds(newVideoIds);
         meta.setTotalReviewCount(comments.size());
         meta.setCategoryReviewCount(categoryCount);
         meta.setTotalSentimentCount(sentimentCount);
@@ -111,14 +129,15 @@ public class KafkaConsumerService {
         response.setMetaInfo(meta);
         response.setCategoryReviews(categoryReviews);
 
-        System.out.println("===========MongoDB 저장 내용======="+response);
+        System.out.println("===========MongoDB 저장 내용=======" + response);
         try {
             analyzedCommentRepository.save(response);
             System.out.println("저장 성공");
         } catch (Exception e) {
             System.out.println("저장 실패: " + e.getMessage());
-            e.printStackTrace();  // 콘솔에 전체 예외 로그 출력
+            e.printStackTrace();
         }
+
         return response;
     }
 
