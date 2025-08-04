@@ -2,7 +2,6 @@ package com.example.kafka_es.controller;
 
 import com.example.kafka_es.dto.AnalyzeRequest;
 import com.example.kafka_es.dto.AnalyzedCommentResponse;
-import com.example.kafka_es.model.CommentModel;
 import com.example.kafka_es.service.KafkaConsumerService;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -27,13 +26,16 @@ public class AnalyzedController {
     }
 
     @GetMapping("/summary/preview")
-    public ResponseEntity<AnalyzedCommentResponse> previewSummary(
+    public ResponseEntity<AnalyzedCommentResponse> previewMergedSummary(
             @RequestParam List<String> videoIds,
             @RequestParam String targetProduct
     ) {
-        AnalyzedCommentResponse summary = consumerService.createSummary(videoIds, targetProduct);
-        return ResponseEntity.ok(summary);
+        // 존재하는 요약은 DB에서 불러오고, 없는 건 새로 요약 후 합치기
+        AnalyzedCommentResponse merged = consumerService.summarizeWithMergeIfNeeded(videoIds, targetProduct);
+
+        return ResponseEntity.ok(merged);
     }
+
 
     /**
      * 프론트에서 전달된 videoUrls와 keyword를 기반으로 분석 후
@@ -44,16 +46,22 @@ public class AnalyzedController {
         List<String> videoIds = request.getUrls();
         String targetProduct = request.getKeyword();
 
-        // Step 1. 분석
-        AnalyzedCommentResponse summary = consumerService.createSummary(videoIds, targetProduct);
-        System.out.println("파이썬 서버 전송: " + summary);
+        // Step 1. DB에서 분석 결과 조회
+        List<AnalyzedCommentResponse> summaries = consumerService.fetchSummariesFromDB(videoIds);
+        if (summaries.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "분석된 댓글이 없습니다."));
+        }
 
-        // Step 2. GPT 서버로 POST 요청
+        // Step 2. 하나로 병합
+        AnalyzedCommentResponse merged = consumerService.mergeSummaries(summaries, targetProduct);
+        System.out.println("GPT 서버 전송 데이터: " + merged);
+
+        // Step 3. GPT 서버로 POST
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<AnalyzedCommentResponse> entity = new HttpEntity<>(summary, headers);
+        HttpEntity<AnalyzedCommentResponse> entity = new HttpEntity<>(merged, headers);
 
         ResponseEntity<Map> gptResponse = restTemplate.postForEntity(
                 gptServer + "/comments/summary/",

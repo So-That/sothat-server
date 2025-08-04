@@ -1,5 +1,6 @@
 package com.example.kafka_es.service;
 
+import com.example.kafka_es.repository.AnalyzedCommentRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.example.kafka_es.config.KafkaProducerConfig;
@@ -18,14 +19,20 @@ public class YouTubeProducerService {
     private final String kafkaTopic;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+
+    private final AnalyzedCommentRepository analyzedCommentRepository;
+
     @Value("${youtube.api.key}")
     private String apiKey;
 
-    public YouTubeProducerService(KafkaTemplate<String, String> kafkaTemplate, KafkaProducerConfig kafkaProducerConfig) {
+    int MAX_CNT=1000;
+
+    public YouTubeProducerService(KafkaTemplate<String, String> kafkaTemplate, KafkaProducerConfig kafkaProducerConfig, AnalyzedCommentRepository analyzedCommentRepository) {
         this.kafkaTemplate = kafkaTemplate;
         this.kafkaTopic = "RawComments";
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
+        this.analyzedCommentRepository= analyzedCommentRepository;
     }
     //검색어로 동영상 ID 조회
     private List<String> searchVideos(String query) {
@@ -124,9 +131,12 @@ public class YouTubeProducerService {
         Set<String> seenCommentIds = new HashSet<>(); // 중복 방지
         List<JsonNode> comments = new ArrayList<>();
 
-        int max_cnt=600;
+        int max_cnt=MAX_CNT;
 
         for (String videoId : videoIds) {
+            if(analyzedCommentRepository.existsByMetaInfo_VideoIdsIn(Collections.singletonList(videoId))) {
+                continue;
+            }
             String nextPageToken = "";
             int count = 0;
 
@@ -152,7 +162,7 @@ public class YouTubeProducerService {
                                 if (count >= max_cnt) break;
                             }
 
-                            // ✅ 답글이 있으면 추가 수집
+                            // 답글이 있으면 추가 수집
                             if (item.has("replies") && item.get("replies").has("comments")) {
                                 for (JsonNode reply : item.get("replies").get("comments")) {
                                     String replyId = reply.get("id").asText();
