@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = 'boxty123/backend-app'
+        IMAGE_NAME = 'boxty123/backend'
         IMAGE_TAG = 'latest'
     }
 
     stages {
         stage('Git Clone') {
             steps {
-                git url: 'https://github.com/So-That/sothat-server.git', branch: 'main'
+                git url: 'https://github.com/So-That/sothat-server.git', branch: 'feat/visualization_api'
             }
         }
 
@@ -25,15 +25,5 @@ pipeline {
                 }
             }
         }
-
-        stage('Deploy (Container Restart)') {
-            steps {
-                sh '''
-                docker pull $IMAGE_NAME:$IMAGE_TAG
-                docker compose down
-                docker compose up -d
-                '''
-            }
-        }
     }
-}
+ }

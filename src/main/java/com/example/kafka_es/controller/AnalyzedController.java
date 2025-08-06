@@ -18,24 +18,20 @@ public class AnalyzedController {
 
     private final KafkaConsumerService consumerService;
 
-    @Value("${gpt.server:http://localhost:8000}")
+    @Value("${GPT_SERVER:http://localhost:8000}")
     private String gptServer;
+
 
     public AnalyzedController(KafkaConsumerService consumerService) {
         this.consumerService = consumerService;
     }
 
-    @GetMapping("/summary/preview")
-    public ResponseEntity<AnalyzedCommentResponse> previewMergedSummary(
-            @RequestParam List<String> videoIds,
-            @RequestParam String targetProduct
-    ) {
-        // 존재하는 요약은 DB에서 불러오고, 없는 건 새로 요약 후 합치기
-        AnalyzedCommentResponse merged = consumerService.summarizeWithMergeIfNeeded(videoIds, targetProduct);
-
+    @PostMapping("/summary/preview")
+    public ResponseEntity<AnalyzedCommentResponse> previewMergedSummary(@RequestBody AnalyzeRequest request) {
+        AnalyzedCommentResponse merged =
+                consumerService.summarizeWithMergeIfNeeded(request.getUrls(), request.getKeyword());
         return ResponseEntity.ok(merged);
     }
-
 
     /**
      * 프론트에서 전달된 videoUrls와 keyword를 기반으로 분석 후
@@ -54,7 +50,7 @@ public class AnalyzedController {
 
         // Step 2. 하나로 병합
         AnalyzedCommentResponse merged = consumerService.mergeSummaries(summaries, targetProduct);
-        System.out.println("GPT 서버 전송 데이터: " + merged);
+        System.out.println("GPT 서버 전송 데이터: " + merged + gptServer);
 
         // Step 3. GPT 서버로 POST
         RestTemplate restTemplate = new RestTemplate();
