@@ -4,6 +4,7 @@ services:
   jenkins:
     image: jenkins/jenkins:lts
     container_name: jenkins
+    user: root
     ports:
       - "8081:8080"     # Jenkins 웹 UI
       - "50000:50000"   # 에이전트 통신 포트
