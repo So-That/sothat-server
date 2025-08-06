@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Git Clone') {
             steps {
-                git url: 'https://github.com/So-That/sothat-server.git', branch: 'feat/visualization_api'
+                git url: 'https://github.com/So-That/sothat-server.git', branch: 'master'
             }
         }
 
