@@ -46,18 +46,17 @@ pipeline {
                     [$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials'],
                     string(credentialsId: 'ec2-instance-id', variable: 'INSTANCE_ID')
                 ]) {
-                    sh '''
+                    sh """
                     echo "🚀 Deploying to EC2 via SSM..."
 
-                    aws ssm send-command \
-                        --document-name "AWS-RunShellScript" \
-                        --comment "Deploying new backend version" \
-                        --instance-ids "$INSTANCE_ID" \
-                        --region "$AWS_REGION" \
-                        --parameters commands=["cd /home/ec2-user/sothat","docker compose down","docker compose up -d"] \
-                        ' \
+                    aws ssm send-command \\
+                        --document-name "AWS-RunShellScript" \\
+                        --comment "Deploying new backend version" \\
+                        --instance-ids $INSTANCE_ID \\
+                        --region $AWS_REGION \\
+                        --parameters 'commands=["cd /home/ec2-user/sothat","docker compose down","docker compose up -d"]' \\
                         --output text
-                    '''
+                    """
                 }
             }
         }
