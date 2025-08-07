@@ -9,13 +9,7 @@ pipeline {
     stages {
         stage('Git Clone') {
             steps {
-                deleteDir()
-                sh '''
-                echo "🧪 Cloning manually..."
-                git clone https://github.com/So-That/sothat-server.git .
-                echo "🧪 Directory after clone:"
-                ls -al
-                '''
+                git url: 'https://github.com/So-That/sothat-server.git', branch: 'master'
             }
         }
 
