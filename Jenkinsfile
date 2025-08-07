@@ -9,6 +9,7 @@ pipeline {
     stages {
         stage('Git Clone') {
             steps {
+                deleteDir()
                 git url: 'https://github.com/So-That/sothat-server.git', branch: 'master'
             }
         }
