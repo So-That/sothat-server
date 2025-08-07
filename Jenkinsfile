@@ -10,14 +10,11 @@ pipeline {
         stage('Git Clone') {
             steps {
                 deleteDir()
-                git url: 'https://github.com/So-That/sothat-server.git', branch: 'master'
                 sh '''
-                echo "🧪 CURRENT DIRECTORY:"
-                pwd
-                echo "🧪 FILE LIST:"
+                echo "🧪 Cloning manually..."
+                git clone https://github.com/So-That/sothat-server.git .
+                echo "🧪 Directory after clone:"
                 ls -al
-                echo "🧪 .git 존재 여부:"
-                ls -al .git
                 '''
             }
         }
