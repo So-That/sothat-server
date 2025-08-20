@@ -1,0 +1,69 @@
+services:
+  zookeeper:
+    image: zookeeper:3.9.3-jre-17
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+    networks:
+      - kafka-net
+
+  kafka:
+    image: wurstmeister/kafka:2.13-2.8.1
+    container_name: kafka
+    ports:
+      - 9092:9092        # 내부용
+      - 29092:29092      # 외부(호스트/EC2)용
+    environment:
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - kafka-net
+
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    restart: always
+    ports:
+      - 27017:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: 1234
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - kafka-net
+
+  ai-infer:
+    image: boxty123/ai_infer:latest
+    container_name: ai-infer
+    depends_on: [ kafka, mongodb ]
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      AWS_REGION: ap-northeast-2
+    volumes:
+      - ./models:/app/models:ro
+    networks:
+      - kafka-net
+
+  gpt:
+     image: boxty123/gpt:v3
+     container_name: gpt
+     restart: unless-stopped
+     ports:
+      - "8000:8000"
+     environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+     networks:
+      - kafka-net
+
+networks:
+  kafka-net:
+    driver: bridge
+
+volumes:
+  mongo_data:
