@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.*;
 
@@ -36,7 +37,7 @@ public class YouTubeProducerService {
     }
     //검색어로 동영상 ID 조회
     private List<String> searchVideos(String query) {
-        String url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + query + "&maxResults=3&type=video&key=" + apiKey;
+        String url = "https://www.googleapis.com/youtube/v3/search?part=snippet&q=" + query + "&maxResults=10&type=video&key=" + apiKey;
         JsonNode response = restTemplate.getForObject(url, JsonNode.class);
 
         List<String> videoIds = new ArrayList<>();
@@ -63,7 +64,7 @@ public class YouTubeProducerService {
     }
 
     /**
-      *유튜브 URL에서 비디오 ID 추출
+     *유튜브 URL에서 비디오 ID 추출
      */
     private String extractVideoId(String url) {
         if (url.contains("youtube.com/watch?v=")) {
@@ -78,33 +79,54 @@ public class YouTubeProducerService {
      *  YouTube 동영상 ID로 상세 정보 가져오기
      */
     private Map<String, Object> getVideoDetails(String videoId) {
-        String videoDetailsUrl = "https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&id=" + videoId + "&key=" + apiKey;
-        JsonNode videoDetailsResponse = restTemplate.getForObject(videoDetailsUrl, JsonNode.class);
+        if (videoId == null || videoId.isBlank()) return Map.of();
 
-        Map<String, Object> videoData = new HashMap<>();
+        String url = UriComponentsBuilder
+                .fromHttpUrl("https://www.googleapis.com/youtube/v3/videos")
+                .queryParam("part", "snippet,statistics")
+                .queryParam("id", videoId)
+                .queryParam("key", apiKey)
+                .toUriString();
 
-        if (videoDetailsResponse != null && videoDetailsResponse.has("items")) {
-            JsonNode item = videoDetailsResponse.get("items").get(0);
-            JsonNode snippet = item.get("snippet");
-            JsonNode statistics = item.get("statistics");
+        JsonNode res = restTemplate.getForObject(url, JsonNode.class);
+        Map<String, Object> out = new HashMap<>();
 
-            String channelId = snippet.get("channelId").asText();
-            videoData.put("videoId", videoId);
-            videoData.put("title", snippet.get("title").asText());
-            videoData.put("channelId", channelId);
-            videoData.put("channelTitle", snippet.get("channelTitle").asText());
-            videoData.put("publishedAt", snippet.get("publishedAt").asText());
-            videoData.put("thumbnailUrl", snippet.get("thumbnails").get("high").get("url").asText());
-            videoData.put("viewCount", statistics.get("viewCount").asText());
-            videoData.put("likeCount", statistics.get("likeCount").asText());
-            videoData.put("commentCount", statistics.get("commentCount").asText());
+        if (res == null || res.has("error")) return out;
+        if (!res.has("items") || !res.get("items").isArray() || res.get("items").size() == 0) return out;
 
-            // 채널 정보 가져오기 (구독자 수)
-            videoData.putAll(getChannelDetails(channelId));
-        }
+        JsonNode item = res.path("items").get(0);
+        JsonNode snippet = item.path("snippet");
+        JsonNode statistics = item.path("statistics");
 
-        return videoData;
+        String channelId    = snippet.path("channelId").asText("");
+        String title        = snippet.path("title").asText("");
+        String channelTitle = snippet.path("channelTitle").asText("");
+        String publishedAt  = snippet.path("publishedAt").asText("");
+
+        String thumb = snippet.path("thumbnails").path("high").path("url").asText(
+                snippet.path("thumbnails").path("medium").path("url").asText(
+                        snippet.path("thumbnails").path("default").path("url").asText("")
+                ));
+
+        // like/comment 비공개 대비 기본값
+        String viewCount    = statistics.path("viewCount").asText("0");
+        String likeCount    = statistics.path("likeCount").asText("unknown");      // 없으면 "0"
+        String commentCount = statistics.path("commentCount").asText("unknown");   // 없으면 "0"
+
+        out.put("videoId", videoId);
+        out.put("title", title);
+        out.put("channelId", channelId);
+        out.put("channelTitle", channelTitle);
+        out.put("publishedAt", publishedAt);
+        out.put("thumbnailUrl", thumb);
+        out.put("viewCount", viewCount);
+        out.put("likeCount", likeCount);
+        out.put("commentCount", commentCount);
+
+        if (!channelId.isBlank()) out.putAll(getChannelDetails(channelId));
+        return out;
     }
+
 
     /**
      * 채널 ID로 구독자 수 가져오기
@@ -198,7 +220,7 @@ public class YouTubeProducerService {
         ObjectNode commentModel = objectMapper.createObjectNode();
         commentModel.put("id", id);
         commentModel.put("video_id", videoId);
-       // commentModel.put("query", query);
+        // commentModel.put("query", query);
         commentModel.put("reply", commentSnippet.get("textDisplay").asText().replace("\n", " "));
         commentModel.put("like_count", commentSnippet.has("likeCount") ? commentSnippet.get("likeCount").asInt() : 0);
         commentModel.put("published_at", commentSnippet.get("publishedAt").asText());

@@ -21,7 +21,6 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
-    // (선택) 구버전 httpclient(4.x)만 전역 제외 – client5는 아예 추가하지 않으므로 영향 없음
     all {
         exclude group: 'org.apache.httpcomponents', module: 'httpclient' // 4.x 전용
     }
@@ -29,7 +28,7 @@ configurations {
 
 dependencies {
     // Spring Boot
-    implementation 'org.springframework.boot:spring-boot-starter-web'       // MVC (RestController 등)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'   // WebClient 사용 목적
     implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
