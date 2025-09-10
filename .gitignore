@@ -6,9 +6,11 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### ai_model ###
-models/
 
+
+src/main/java/com/example/kafka_es/dto/ControlEvent.java
+src/main/java/com/example/kafka_es/dto/DoneEvent.java
+src/main/java/com/example/kafka_es/service/CallbackService.java
 ### docs ###
 docs/
 

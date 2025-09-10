@@ -11,8 +11,8 @@ services:
     image: wurstmeister/kafka:2.13-2.8.1
     container_name: kafka
     ports:
-      - 9092:9092        # 내부용
-      - 29092:29092      # 외부(호스트/EC2)용
+      - 9092:9092
+      - 29092:29092
     environment:
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:29092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
@@ -39,15 +39,13 @@ services:
     networks:
       - kafka-net
 
-  ai-infer:
-    image: boxty123/ai_infer:latest
-    container_name: ai-infer
+  ai:
+    image: boxty123/ai:v3
+    container_name: ai
     depends_on: [ kafka, mongodb ]
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       AWS_REGION: ap-northeast-2
-    volumes:
-      - ./models:/app/models:ro
     networks:
       - kafka-net
 
