@@ -138,7 +138,7 @@ public class KafkaConsumerService {
             analyzedCommentRepository.saveAll(results);
             log.info("🗄️ saveAll 완료: 저장개수={}", results.size());
         } else {
-            log.warn("🗄️ 저장 스킵: 저장할 결과가 없습니다(results empty).");
+            log.warn("🗄️ 저장 스킵: 저장할 결과가 없다(results empty).");
         }
 
         log.info("✅ createSummary 종료: durationMs={}", System.currentTimeMillis() - t0);
