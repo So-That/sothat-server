@@ -9,7 +9,7 @@ import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 public class WebConfig {
-    @Value("${cors.allowd-origin:http://localhost:5173}")
+    @Value("${cors.allowed-origin:http://localhost:5173}")
     private String allowedOrigin;
 
     @Bean
