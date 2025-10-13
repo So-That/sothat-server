@@ -1,22 +1,22 @@
 package com.example.kafka_es.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-import java.util.Map;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.util.List;
+import java.util.Map;
 
-@Getter
-@Setter
-@Document(collection="analyzed_summaries")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class AnalyzedCommentResponse {
 
-    @JsonIgnore
-    @Id
-    private String id;
+    @JsonProperty("video_id")
+    private String videoId;
+
+    @JsonProperty("created_at")
+    private String createdAt;
 
     @JsonProperty("target_product")
     private String targetProduct;

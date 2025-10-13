@@ -1,7 +1,6 @@
 package com.example.kafka_es.service;
 
 import com.example.kafka_es.kafka.Topics;
-import com.example.kafka_es.repository.AnalyzedCommentRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -22,24 +21,24 @@ public class YouTubeProducerService {
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
-    private final AnalyzedCommentRepository analyzedCommentRepository;
+    private final AnalyzedCommentService analyzedCommentService;
 
-    // 토픽명 (Topics 상수 사용)
+    // 토픽명
     private static final String RAW_TOPIC = Topics.RAW_COMMENTS;
     private static final String CONTROL_TOPIC = Topics.ANALYSIS_CONTROL;
 
     @Value("${youtube.api.key}")
     private String apiKey;
 
-    // 1회 최대 수집 댓글(상한)
+    // 1회 최대 수집 댓글
     private static final int MAX_CNT = 1000;
 
     public YouTubeProducerService(KafkaTemplate<String, String> kafkaTemplate,
-                                  AnalyzedCommentRepository analyzedCommentRepository) {
+                                  AnalyzedCommentService analyzedCommentService) {
         this.kafkaTemplate = kafkaTemplate;
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
-        this.analyzedCommentRepository = analyzedCommentRepository;
+        this.analyzedCommentService = analyzedCommentService;
     }
 
     // --------------------------------------------
@@ -165,8 +164,8 @@ public class YouTubeProducerService {
         List<JsonNode> comments = new ArrayList<>();
 
         for (String videoId : videoIds) {
-            // 이미 해당 videoId 요약이 DB에 있으면 스킵
-            if (analyzedCommentRepository.existsByMetaInfo_VideoIdsIn(Collections.singletonList(videoId))) {
+            // ✅ DynamoDB 존재 여부 확인
+            if (analyzedCommentService.existsByVideoIdContaining(videoId)) {
                 log.info("⏭️ 이미 DB에 요약 존재: videoId={} -> 댓글 수집 스킵", videoId);
                 continue;
             }
@@ -264,10 +263,7 @@ public class YouTubeProducerService {
     // 공개 API
     // --------------------------------------------
 
-    /**
-     * URL 리스트를 통해 동영상 댓글을 가져와 Kafka에 전송 후 원본 JSON 반환
-     * (A안: START → Raw N개 → END 전송)
-     */
+    // URL 리스트 → 댓글 가져와 Kafka 전송
     public List<JsonNode> fetchCommentByUrl(List<String> urls) {
         List<String> videoIds = new ArrayList<>();
         for (String url : urls) {
@@ -277,21 +273,16 @@ public class YouTubeProducerService {
         return fetchAndSendComments(videoIds);
     }
 
-    /**
-     * 비디오 ID 리스트를 통해 동영상 댓글을 가져와 Kafka에 전송 후 원본 JSON 반환
-     * (A안: START → Raw N개 → END 전송)
-     */
+    // 비디오 ID 리스트 → 댓글 가져와 Kafka 전송
     public List<JsonNode> fetchCommentByWord(List<String> videoIds) {
         return fetchAndSendComments(videoIds);
     }
 
-    /**
-     * 핵심: 댓글 수집 → videoId별 그룹 → START → Raw → END
-     */
+    // 핵심 로직
     private List<JsonNode> fetchAndSendComments(List<String> videoIds) {
         if (videoIds == null || videoIds.isEmpty()) return Collections.emptyList();
 
-        // 댓글 수집 (DB 존재하는 videoId는 내부에서 스킵)
+        // ✅ DB에 없는 것만 댓글 수집
         List<JsonNode> comments = fetchComments(videoIds);
 
         // videoId별 그룹핑
@@ -303,10 +294,10 @@ public class YouTubeProducerService {
         for (String videoId : videoIds) {
             List<JsonNode> list = byVideo.getOrDefault(videoId, List.of());
 
-            // START (분석 대상 댓글 수를 expected_count로 사용)
+            // START
             sendControlStart(videoId, list.size());
 
-            // RawComments 전송 (key=videoId)
+            // RawComments 전송
             int sent = 0;
             for (JsonNode c : list) {
                 sendRaw(videoId, c.toString());

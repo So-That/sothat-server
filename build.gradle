@@ -21,19 +21,21 @@ configurations {
     compileOnly {
         extendsFrom annotationProcessor
     }
-    all {
-        exclude group: 'org.apache.httpcomponents', module: 'httpclient' // 4.x 전용
-    }
 }
 
 dependencies {
     // Spring Boot
     implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation 'org.springframework.boot:spring-boot-starter-webflux'   // WebClient 사용 목적
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.kafka:spring-kafka'
-    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
 
-    // OpenAPI (springdoc) — Boot 3.4.x 호환 버전
+    // AWS SDK v2 for DynamoDB
+    implementation 'software.amazon.awssdk:dynamodb:2.20.143'
+
+    // ✅ AWS SDK v2 Apache HTTP 클라이언트 모듈 추가
+    implementation 'software.amazon.awssdk:apache-client:2.20.143'
+
+    // OpenAPI
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 
     // Lombok

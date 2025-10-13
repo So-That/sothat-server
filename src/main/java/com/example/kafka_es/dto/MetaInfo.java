@@ -1,21 +1,22 @@
 package com.example.kafka_es.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Getter;
-import lombok.Setter;
-
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.Map;
 
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class MetaInfo {
 
-    @JsonProperty("total_review_count")
-    private int totalReviewCount;
-
-    @JsonProperty("video_id")
+    @JsonProperty("video_ids")
     private List<String> videoIds;
+
+    @JsonProperty("total_review_count")
+    private Integer totalReviewCount;
 
     @JsonProperty("category_review_count")
     private Map<String, Integer> categoryReviewCount;

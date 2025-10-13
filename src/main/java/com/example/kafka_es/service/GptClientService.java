@@ -33,9 +33,9 @@ public class GptClientService {
         String p = normalize(path);
         try {
             return gptClient.post()
-                    .uri(p)                               // POST 고정
+                    .uri(p)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .bodyValue(previewPayload)            // body는 snake_case 그대로
+                    .bodyValue(previewPayload) // 이미 snake_case Map 전달
                     .retrieve()
                     .onStatus(HttpStatusCode::isError, resp ->
                             resp.bodyToMono(String.class).defaultIfEmpty("")
