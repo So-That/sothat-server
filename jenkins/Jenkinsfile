@@ -19,7 +19,6 @@ pipeline {
                 echo "ALB DNS: ${ALB_DNS_NAME}"
             }
         }
-
         stage('Docker Build and Push') {
             steps {
                 withCredentials([
@@ -30,10 +29,9 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    docker build -t $IMAGE_NAME:$IMAGE_TAG .
-                    docker push $IMAGE_NAME:$IMAGE_TAG
-                    docker logout
+                    sudo docker login -u "$DOCKER_USER" --password-stdin <<< "$DOCKER_PASS"
+                    sudo docker build -t boxty123/final:latest .
+                    sudo docker push boxty123/final:latest
                     '''
                 }
             }
